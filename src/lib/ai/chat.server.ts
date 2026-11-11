@@ -90,14 +90,51 @@ ${knowledge || "(No document uploaded yet.)"}
     maxRetries: 1,
   });
 
-  return result.toUIMessageStreamResponse({
-    originalMessages: messages,
-    onError: (err) => {
-      console.error("gemini error", err);
-      const msg = err instanceof Error ? err.message : String(err);
-      if (/api key|API_KEY|permission|401|403/i.test(msg))
-        return "Gemini ključ nije validan (GOOGLE_GENERATIVE_AI_API_KEY). / Invalid Gemini API key. " + msg;
-      return "Greška asistenta / Assistant error: " + msg;
-    },
+  const fmt = (err: unknown) => {
+    console.error("gemini error", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/api key|API_KEY|permission|401|403/i.test(msg))
+      return "Gemini ključ nije validan (GOOGLE_GENERATIVE_AI_API_KEY). / Invalid Gemini API key. " + msg;
+    return "Greška asistenta / Assistant error: " + msg;
+  };
+
+  // Always end with visible text: errors, timeouts and empty Gemini replies are written into the chat.
+  return createUIMessageStreamResponse({
+    stream: createUIMessageStream({
+      originalMessages: messages,
+      execute: async ({ writer }) => {
+        let gotText = false;
+        let aborted = false;
+        let errMsg = "";
+        let finish: unknown = null;
+        try {
+          for await (const chunk of result.toUIMessageStream({ onError: (e) => (errMsg = fmt(e)) })) {
+            if (chunk.type === "text-delta" && chunk.delta.trim()) gotText = true;
+            if (chunk.type === "error") continue;
+            if (chunk.type === "abort") aborted = true;
+            if (chunk.type === "finish") {
+              finish = chunk;
+              continue;
+            }
+            writer.write(chunk);
+          }
+        } catch (e) {
+          errMsg = fmt(e);
+        }
+        if (!gotText) {
+          let reason = errMsg;
+          if (!reason && aborted)
+            reason = `Gemini nije odgovorio na vrijeme (model ${MODEL}). / Gemini did not respond in time (model ${MODEL}).`;
+          if (!reason) {
+            const fr = await Promise.resolve(result.finishReason).catch(() => "unknown");
+            reason = `Gemini je vratio prazan odgovor (model ${MODEL}, razlog: ${fr}). / Gemini returned an empty reply (model ${MODEL}, reason: ${fr}).`;
+          }
+          writer.write({ type: "text-start", id: "notice" });
+          writer.write({ type: "text-delta", id: "notice", delta: reason });
+          writer.write({ type: "text-end", id: "notice" });
+        }
+        if (finish) writer.write(finish as Parameters<typeof writer.write>[0]);
+      },
+    }),
   });
 }
