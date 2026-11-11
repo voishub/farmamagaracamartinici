@@ -86,7 +86,8 @@ ${knowledge || "(No document uploaded yet.)"}
     model: provider(MODEL),
     system,
     messages: convMessages,
-    abortSignal: request.signal,
+    abortSignal: AbortSignal.any([request.signal, AbortSignal.timeout(50_000)]),
+    maxRetries: 1,
   });
 
   return result.toUIMessageStreamResponse({

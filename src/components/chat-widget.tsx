@@ -51,7 +51,7 @@ export function ChatWidget() {
     () => new DefaultChatTransport({ api: "/api/chat", body: () => ({ lang: langRef.current }) }),
     [],
   );
-  const { messages, sendMessage, status, stop } = useChat({
+  const { messages, sendMessage, status, stop, error } = useChat({
     transport,
     onError: (err) => {
       const m = err.message || "";
@@ -138,6 +138,11 @@ export function ChatWidget() {
                     </MessageContent>
                   </Message>
                 ))
+              )}
+              {status === "error" && error && (
+                <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                  {error.message || (lang === "sr" ? "Greška asistenta." : "Assistant error.")}
+                </p>
               )}
               {status === "submitted" && <Shimmer className="text-sm">{c.thinking}</Shimmer>}
             </ConversationContent>
