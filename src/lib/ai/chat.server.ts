@@ -74,5 +74,14 @@ ${knowledge || "(No document uploaded yet.)"}
     abortSignal: request.signal,
   });
 
-  return result.toUIMessageStreamResponse({ originalMessages: messages });
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    onError: (err) => {
+      console.error("gemini error", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/api key|API_KEY|permission|401|403/i.test(msg))
+        return "Gemini ključ nije validan (GOOGLE_GENERATIVE_AI_API_KEY). / Invalid Gemini API key. " + msg;
+      return "Greška asistenta / Assistant error: " + msg;
+    },
+  });
 }
