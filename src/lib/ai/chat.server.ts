@@ -12,8 +12,11 @@ const MODEL = "openai/gpt-6-astra";
 const MAX_KNOWLEDGE = 300_000;
 
 async function loadKnowledge() {
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
-  const sb = createClient<Database>(process.env["SUPABASE_URL"]!, key, {
+  // Fallback to the public VITE_ values so hosts without these server vars (e.g. Vercel) still load the document.
+  const key = process.env["SUPABASE_PUBLISHABLE_KEY"] || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const url = process.env["SUPABASE_URL"] || import.meta.env.VITE_SUPABASE_URL;
+  if (!key || !url) return "";
+  const sb = createClient<Database>(url, key, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     global: {
       fetch: (input, init) => {
@@ -31,7 +34,7 @@ async function loadKnowledge() {
 
 export async function handleChat(request: Request) {
   const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) return Response.json({ error: "AI is not configured" }, { status: 500 });
+  if (!apiKey) return Response.json({ error: "Asistent nije podešen: na serveru nedostaje LOVABLE_API_KEY. / Assistant not configured: LOVABLE_API_KEY is missing on the server." }, { status: 500 });
 
   let body: { messages?: UIMessage[]; lang?: string };
   try {
