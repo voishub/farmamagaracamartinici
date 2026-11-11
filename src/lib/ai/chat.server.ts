@@ -1,15 +1,9 @@
-import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import {
-  createLovableAiGatewayRunIdFetch,
-  getLovableAiGatewayRunId,
-  withLovableAiGatewayRunIdHeader,
-} from "./run-id.server";
 
-const MODEL = "openai/gpt-6-astra";
+const MODEL = process.env["GEMINI_MODEL"] || "gemini-2.5-flash";
 const MAX_KNOWLEDGE = 300_000;
 
 async function loadKnowledge() {
@@ -34,11 +28,15 @@ async function loadKnowledge() {
 }
 
 export async function handleChat(request: Request) {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  const geminiKey = process.env["GOOGLE_GENERATIVE_AI_API_KEY"] || process.env["GEMINI_API_KEY"];
-  const openaiKey = process.env["OPENAI_API_KEY"];
-  if (!apiKey && !geminiKey && !openaiKey)
-    return Response.json({ error: "Asistent nije podešen: dodajte GEMINI_API_KEY ili OPENAI_API_KEY u podešavanja hostinga. / Assistant not configured: add GEMINI_API_KEY or OPENAI_API_KEY to the hosting settings." }, { status: 500 });
+  const apiKey = process.env["GOOGLE_GENERATIVE_AI_API_KEY"] || process.env["GEMINI_API_KEY"];
+  if (!apiKey)
+    return Response.json(
+      {
+        error:
+          "Asistent nije podešen: dodajte GOOGLE_GENERATIVE_AI_API_KEY u podešavanja hostinga (Vercel → Settings → Environment Variables). / Assistant not configured: add GOOGLE_GENERATIVE_AI_API_KEY to the hosting environment variables.",
+      },
+      { status: 500 },
+    );
 
   let body: { messages?: UIMessage[]; lang?: string };
   try {
@@ -67,46 +65,14 @@ ${knowledge || "(No document uploaded yet.)"}
 """`;
 
   const convMessages = await convertToModelMessages(messages);
-  if (!apiKey) {
-    const model = geminiKey
-      ? createGoogleGenerativeAI({ apiKey: geminiKey })(process.env["GEMINI_MODEL"] || "gemini-2.5-flash")
-      : createOpenAI({ apiKey: openaiKey! }).responses(process.env["OPENAI_MODEL"] || "gpt-5-mini");
-    const direct = streamText({
-      model,
-      system,
-      messages: convMessages,
-      abortSignal: request.signal,
-      ...(geminiKey ? {} : { providerOptions: { openai: { store: false } } }),
-    });
-    return direct.toUIMessageStreamResponse({ originalMessages: messages });
-  }
-
-  const runIdFetch = createLovableAiGatewayRunIdFetch(getLovableAiGatewayRunId(request));
-  const provider = createOpenAI({
-    baseURL: "https://ai.gateway.lovable.dev/v1",
-    apiKey,
-    headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
-    fetch: runIdFetch.fetch,
-  });
+  const provider = createGoogleGenerativeAI({ apiKey });
 
   const result = streamText({
-    model: provider.responses(MODEL),
-    instructions: system,
+    model: provider(MODEL),
+    system,
     messages: convMessages,
     abortSignal: request.signal,
-    providerOptions: {
-      openai: {
-        store: false,
-        forceReasoning: true,
-        reasoningEffort: "low",
-        reasoningSummary: "auto",
-        include: ["reasoning.encrypted_content"],
-      },
-    },
   });
 
-  return withLovableAiGatewayRunIdHeader(
-    result.toUIMessageStreamResponse({ originalMessages: messages }),
-    runIdFetch,
-  );
+  return result.toUIMessageStreamResponse({ originalMessages: messages });
 }
