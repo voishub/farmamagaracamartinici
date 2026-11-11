@@ -3,7 +3,7 @@ import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-const MODEL = process.env["GEMINI_MODEL"] || "gemini-2.5-flash";
+const MODEL = process.env["GEMINI_MODEL"] || "gemini-3.8-flash";
 const MAX_KNOWLEDGE = 300_000;
 
 async function loadKnowledge() {
