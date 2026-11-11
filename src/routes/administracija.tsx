@@ -76,6 +76,13 @@ function AuthPage() {
         <button type="button" className="w-full text-sm text-muted-foreground hover:text-foreground" onClick={() => setMode(mode === "in" ? "up" : "in")}>
           {mode === "in" ? "Nemate nalog? Registracija" : "Imate nalog? Prijava"}
         </button>
+        {mode === "in" && (
+          <button type="button" className="w-full text-sm text-primary" onClick={async () => {
+            if (!email) { toast.error("Upišite email iznad."); return; }
+            const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+            if (error) toast.error(error.message); else toast.success("Poslali smo vam email sa linkom za novu lozinku.");
+          }}>Zaboravljena lozinka?</button>
+        )}
         <a href="/" className="block text-center text-sm text-primary">← Nazad na sajt</a>
       </form>
     </div>
