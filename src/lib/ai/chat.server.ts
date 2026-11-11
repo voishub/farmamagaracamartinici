@@ -1,10 +1,29 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { convertToModelMessages, streamText, type UIMessage } from "ai";
+import {
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  streamText,
+  type UIMessage,
+} from "ai";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
 const MODEL = process.env["GEMINI_MODEL"] || "gemini-3.8-flash";
 const MAX_KNOWLEDGE = 300_000;
+
+// Reply shown in the chat window itself (HTTP 200 stream) instead of failing the request.
+function noticeResponse(text: string) {
+  return createUIMessageStreamResponse({
+    stream: createUIMessageStream({
+      execute: async ({ writer }) => {
+        writer.write({ type: "text-start", id: "notice" });
+        writer.write({ type: "text-delta", id: "notice", delta: text });
+        writer.write({ type: "text-end", id: "notice" });
+      },
+    }),
+  });
+}
 
 async function loadKnowledge() {
   // Fallback to the public VITE_ values so hosts without these server vars (e.g. Vercel) still load the document.
@@ -30,12 +49,8 @@ async function loadKnowledge() {
 export async function handleChat(request: Request) {
   const apiKey = process.env["GOOGLE_GENERATIVE_AI_API_KEY"] || process.env["GEMINI_API_KEY"];
   if (!apiKey)
-    return Response.json(
-      {
-        error:
-          "Asistent nije podešen: dodajte GOOGLE_GENERATIVE_AI_API_KEY u podešavanja hostinga (Vercel → Settings → Environment Variables). / Assistant not configured: add GOOGLE_GENERATIVE_AI_API_KEY to the hosting environment variables.",
-      },
-      { status: 500 },
+    return noticeResponse(
+      "Asistent još nije povezan: dodajte GOOGLE_GENERATIVE_AI_API_KEY u podešavanja hostinga (Vercel → Settings → Environment Variables), pa uradite Redeploy. / Assistant is not connected yet: add GOOGLE_GENERATIVE_AI_API_KEY to the hosting environment variables, then redeploy.",
     );
 
   let body: { messages?: UIMessage[]; lang?: string };
