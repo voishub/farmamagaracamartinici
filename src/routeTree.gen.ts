@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdministracijaRouteImport } from './routes/administracija'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as NovostiSlugRouteImport } from './routes/novosti.$slug'
 import { Route as PSlugRouteImport } from './routes/p.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +36,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NovostiSlugRoute = NovostiSlugRouteImport.update({
+  id: '/novosti/$slug',
+  path: '/novosti/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PSlugRoute = PSlugRouteImport.update({
   id: '/p/$slug',
   path: '/p/$slug',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/administracija': typeof AdministracijaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/api/chat': typeof ApiChatRoute
+  '/novosti/$slug': typeof NovostiSlugRoute
   '/p/$slug': typeof PSlugRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/administracija': typeof AdministracijaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/api/chat': typeof ApiChatRoute
+  '/novosti/$slug': typeof NovostiSlugRoute
   '/p/$slug': typeof PSlugRoute
 }
 export interface FileRoutesById {
@@ -61,20 +69,33 @@ export interface FileRoutesById {
   '/administracija': typeof AdministracijaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/api/chat': typeof ApiChatRoute
+  '/novosti/$slug': typeof NovostiSlugRoute
   '/p/$slug': typeof PSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/administracija' | '/reset-password' | '/api/chat' | '/p/$slug'
+    | '/'
+    | '/administracija'
+    | '/reset-password'
+    | '/api/chat'
+    | '/novosti/$slug'
+    | '/p/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/administracija' | '/reset-password' | '/api/chat' | '/p/$slug'
+  to:
+    | '/'
+    | '/administracija'
+    | '/reset-password'
+    | '/api/chat'
+    | '/novosti/$slug'
+    | '/p/$slug'
   id:
     | '__root__'
     | '/'
     | '/administracija'
     | '/reset-password'
     | '/api/chat'
+    | '/novosti/$slug'
     | '/p/$slug'
   fileRoutesById: FileRoutesById
 }
@@ -83,6 +104,7 @@ export interface RootRouteChildren {
   AdministracijaRoute: typeof AdministracijaRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiChatRoute: typeof ApiChatRoute
+  NovostiSlugRoute: typeof NovostiSlugRoute
   PSlugRoute: typeof PSlugRoute
 }
 
@@ -116,6 +138,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/novosti/$slug': {
+      id: '/novosti/$slug'
+      path: '/novosti/$slug'
+      fullPath: '/novosti/$slug'
+      preLoaderRoute: typeof NovostiSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/p/$slug': {
       id: '/p/$slug'
       path: '/p/$slug'
@@ -131,6 +160,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdministracijaRoute: AdministracijaRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiChatRoute: ApiChatRoute,
+  NovostiSlugRoute: NovostiSlugRoute,
   PSlugRoute: PSlugRoute,
 }
 export const routeTree = rootRouteImport

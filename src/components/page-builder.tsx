@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import logo from "@/assets/donkey-logo.png";
 import { FlexibleSection, SectionSettingsButton, sectionStyle, type SectionSettings } from "@/components/section-editor";
 import { BuilderButton, BuilderSocialLinks } from "@/components/builder-actions";
+import { PostIntro, PostsBlock } from "@/components/posts";
 import { MenuEditor, type MenuTarget } from "@/components/menu-editor";
 import { availableSectionLinks, defaultSectionLinks, sectionAnchor, type SectionMenuLink } from "@/lib/menu-links";
 
@@ -39,6 +40,7 @@ const CUSTOM: Record<string, string> = {
   text: "Tekst",
   textImage: "Tekst sa slikom",
   gallery: "Galerija slika",
+  posts: "Novosti / objave",
 };
 const HOME_DEFAULT: Block[] = Object.keys(BUILTIN).map((t) => ({ id: t, type: t }));
 
@@ -59,7 +61,7 @@ async function fileToDataUrl(file: File): Promise<string> {
 
 export function SitePage({ slug }: { slug: string }) {
   const { json, save, editMode } = useSite();
-  const blocks = json<Block[]>(layoutKey(slug), slug === "home" ? HOME_DEFAULT : []);
+  const blocks = json<Block[]>(layoutKey(slug), slug === "home" ? HOME_DEFAULT : slug.startsWith("post-") ? [{ id: `postintro-${slug.slice(5)}`, type: "postIntro" }] : []);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
 
@@ -369,6 +371,8 @@ function RenderBlock({ block }: { block: Block }) {
     case "text": return <TextBlock id={block.id} />;
     case "textImage": return <TextImageBlock id={block.id} />;
     case "gallery": return <GalleryBlock id={block.id} />;
+    case "posts": return <PostsBlock id={block.id} />;
+    case "postIntro": return <PostIntro slug={block.id.replace(/^postintro-/, "")} />;
     default: return null;
   }
 }
