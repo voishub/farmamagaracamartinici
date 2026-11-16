@@ -1,3 +1,5 @@
+import { Newspaper } from "lucide-react";
+import { PostsBlock } from "@/components/posts";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Columns3, Image, Images, Plus, Settings2, Trash2, Type, AlignLeft, AlignCenter, AlignRight, MousePointerClick, Share2, Phone, MoveVertical, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
@@ -10,7 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BuilderButton, BuilderContact, BuilderSocialLinks } from "@/components/builder-actions";
 
-type ElementKind = "title" | "text" | "image" | "gallery" | "button" | "social" | "contact" | "spacer" | "collapsible";
+type ElementKind = "title" | "text" | "image" | "gallery" | "button" | "social" | "contact" | "spacer" | "collapsible" | "posts";
 type Device = "d" | "t" | "m";
 type Sides = { top: number; right: number; bottom: number; left: number };
 const zero: Sides = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -61,7 +63,7 @@ export function SectionSettingsButton({ id }: { id: string }) {
     </DialogContent></Dialog>
   </>;
 }
-const kinds: { type: ElementKind; label: string; icon: typeof Type }[] = [{ type: "title", label: "Naslov", icon: Type }, { type: "text", label: "Tekst", icon: AlignLeft }, { type: "image", label: "Slika", icon: Image }, { type: "gallery", label: "Galerija", icon: Images }, { type: "button", label: "Dugme", icon: MousePointerClick }, { type: "social", label: "Društvene mreže", icon: Share2 }, { type: "contact", label: "Info ikone", icon: Phone }, { type: "spacer", label: "Razmak", icon: MoveVertical }, { type: "collapsible", label: "Sklopivi tekst", icon: ChevronDown }];
+const kinds: { type: ElementKind; label: string; icon: typeof Type }[] = [{ type: "title", label: "Naslov", icon: Type }, { type: "text", label: "Tekst", icon: AlignLeft }, { type: "image", label: "Slika", icon: Image }, { type: "gallery", label: "Galerija", icon: Images }, { type: "button", label: "Dugme", icon: MousePointerClick }, { type: "social", label: "Društvene mreže", icon: Share2 }, { type: "contact", label: "Info ikone", icon: Phone }, { type: "spacer", label: "Razmak", icon: MoveVertical }, { type: "collapsible", label: "Sklopivi tekst", icon: ChevronDown }, { type: "posts", label: "Objave", icon: Newspaper }];
 const widthOptions = [25, 33, 50, 66, 75, 100] as const;
 const widthLabel = (w: number) => (w === 33 ? "33%" : w === 66 ? "66%" : `${w}%`);
 export function FlexibleSection({ id, renderGallery }: { id: string; renderGallery: (id: string) => ReactNode }) {
@@ -111,6 +113,7 @@ export function FlexibleSection({ id, renderGallery }: { id: string; renderGalle
           {el.type === "social" && <BuilderSocialLinks id={el.id} />}
           {el.type === "contact" && <BuilderContact id={el.id} />}
           {el.type === "spacer" && <div aria-hidden className={`builder-spacer ${editMode ? "border border-dashed border-edit/50 text-center text-xs text-muted-foreground" : ""}`} style={{ "--sp-d": px(el.height ?? 40), "--sp-t": px(el.heightTablet), "--sp-m": px(el.heightMobile) } as CSSProperties}>{editMode ? `${el.height ?? 40}px` : null}</div>}
+          {el.type === "posts" && <PostsBlock id={el.id} embedded />}
           {el.type === "collapsible" && (editMode ? <div className="rounded-md border border-border p-4"><EditableText k={`element.${el.id}.title`} as="h3" className="text-xl font-semibold" /><EditableText k={`element.${el.id}`} as="p" className="mt-3 whitespace-pre-line text-lg leading-relaxed" /></div> : <details className="group rounded-md border border-border p-4"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-xl font-semibold"><EditableText k={`element.${el.id}.title`} as="span" /><ChevronDown className="size-5 shrink-0 transition-transform group-open:rotate-180" /></summary><EditableText k={`element.${el.id}`} as="p" className="mt-3 whitespace-pre-line text-lg leading-relaxed" /></details>)}
         </div>; })}</div>
         {editMode && <div className="mt-4 flex flex-wrap gap-2">{kinds.map(({ type, label, icon: Icon }) => <Button key={type} variant="outline" size="sm" onClick={() => addElement(c, type)}><Icon />{label}</Button>)}</div>}

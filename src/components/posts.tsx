@@ -5,7 +5,7 @@ import { useSite } from "@/lib/site-content";
 import { EditableImage, EditableText } from "@/components/editable";
 import { Button } from "@/components/ui/button";
 
-export type PostInfo = { slug: string; date: string; hidden?: boolean };
+export type PostInfo = { slug: string; date: string; hidden?: boolean; archived?: boolean };
 
 export const POSTS_KEY = "posts";
 export const postLayoutSlug = (slug: string) => `post-${slug}`;
@@ -20,9 +20,11 @@ export function usePosts() {
   return json<PostInfo[]>(POSTS_KEY, []);
 }
 
-export function PostsBlock({ id }: { id: string }) {
+export function PostsBlock({ id, embedded }: { id: string; embedded?: boolean }) {
   const { editMode, save, lang } = useSite();
-  const all = usePosts();
+  const everything = usePosts();
+  const archived = everything.filter((p) => p.archived);
+  const all = everything.filter((p) => !p.archived);
   const posts = [...all.filter((p) => !p.hidden), ...all.filter((p) => p.hidden)];
   const shown = editMode ? posts : posts.filter((p) => !p.hidden);
 
@@ -42,7 +44,7 @@ export function PostsBlock({ id }: { id: string }) {
       toast.success("Objava kreirana — kliknite na naslov da otvorite i uredite tekst");
     } catch (e) { toast.error((e as Error).message); }
   };
-  const persist = (next: PostInfo[]) => save({ [POSTS_KEY]: JSON.stringify(next) }).catch((e) => toast.error(e.message));
+  const persist = (next: PostInfo[]) => save({ [POSTS_KEY]: JSON.stringify([...next, ...archived]) }).catch((e) => toast.error(e.message));
   const move = (i: number, d: number) => {
     const j = i + d; if (j < 0 || j >= posts.length) return;
     const next = [...posts]; [next[i], next[j]] = [next[j]!, next[i]!]; persist(next);
@@ -56,10 +58,20 @@ export function PostsBlock({ id }: { id: string }) {
     persist(updated.hidden ? [...pub, ...drafts, updated] : [...pub, updated, ...drafts]);
     toast.success(updated.hidden ? "Objava sakrivena (draft)" : "Objava ponovo prikazana");
   };
-  const remove = (slug: string) => { if (confirm("Obrisati ovu objavu?")) persist(posts.filter((p) => p.slug !== slug)); };
+  // "Delete" only archives: the post and its texts stay saved and can be restored anytime.
+  const remove = (slug: string) => {
+    const cur = posts.find((p) => p.slug === slug); if (!cur || !confirm("Premjestiti objavu u arhivu? Možete je vratiti kad god želite.")) return;
+    save({ [POSTS_KEY]: JSON.stringify([...posts.filter((p) => p.slug !== slug), ...archived, { ...cur, archived: true }]) }).catch((e) => toast.error(e.message));
+  };
+  const restore = (slug: string) => {
+    const cur = archived.find((p) => p.slug === slug); if (!cur) return;
+    const pub = posts.filter((p) => !p.hidden), drafts = posts.filter((p) => p.hidden);
+    save({ [POSTS_KEY]: JSON.stringify([...pub, ...drafts, { ...cur, archived: false, hidden: true }, ...archived.filter((p) => p.slug !== slug)]) })
+      .then(() => toast.success("Objava vraćena kao draft — kliknite Prikaži da je objavite")).catch((e) => toast.error(e.message));
+  };
 
   return (
-    <section className="mx-auto max-w-6xl px-6 py-20">
+    <section className={embedded ? "w-full" : "mx-auto max-w-6xl px-6 py-20"}>
       <EditableText k={`blk.${id}.title`} as="h2" className="mb-10 font-display text-4xl font-semibold" />
       {editMode && <Button className="mb-8" onClick={create}><Plus /> Nova objava</Button>}
       {shown.length === 0 && <p className="text-muted-foreground">{lang === "en" ? "No news yet." : "Još nema objava."}</p>}
@@ -89,6 +101,19 @@ export function PostsBlock({ id }: { id: string }) {
           </article>
         ))}
       </div>
+      {editMode && archived.length > 0 && (
+        <details className="mt-10 rounded-xl border border-dashed p-4">
+          <summary className="cursor-pointer font-medium">Arhiva objava ({archived.length}) — sačuvane, ne prikazuju se</summary>
+          <ul className="mt-3 space-y-2">
+            {archived.map((p) => (
+              <li key={p.slug} className="flex items-center justify-between gap-3">
+                <EditableText k={`post.${p.slug}.title`} as="span" />
+                <Button size="sm" variant="outline" onClick={() => restore(p.slug)}>Vrati</Button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </section>
   );
 }
@@ -96,7 +121,7 @@ export function PostsBlock({ id }: { id: string }) {
 export function PostIntro({ slug }: { slug: string }) {
   const { lang, isAdmin } = useSite();
   const post = usePosts().find((p) => p.slug === slug);
-  if (post?.hidden && !isAdmin)
+  if ((post?.hidden || post?.archived) && !isAdmin)
     return <p className="mx-auto max-w-3xl px-6 py-32 text-center text-muted-foreground">{lang === "en" ? "This post is not available." : "Ova objava nije dostupna."}</p>;
   return (
     <article className="mx-auto max-w-3xl px-6 pt-16 pb-8">
