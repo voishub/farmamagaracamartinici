@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   ArrowDown, ArrowUp, Baby, ChevronLeft, ChevronRight, Clock, Droplets, FilePlus2, GripVertical, Heart, ImagePlus, Loader2, Mail, MapPin,
@@ -23,7 +24,7 @@ import { MenuEditor, type MenuTarget } from "@/components/menu-editor";
 import { availableSectionLinks, defaultSectionLinks, sectionAnchor, type SectionMenuLink } from "@/lib/menu-links";
 
 export type Block = { id: string; type: string };
-export type PageInfo = { slug: string };
+export type PageInfo = { slug: string; inMenu?: boolean };
 
 const BUILTIN: Record<string, string> = {
   hero: "Glavna slika (naslovna)",
@@ -263,7 +264,7 @@ function SiteHeader({ overlay, slug, blocks }: { overlay: boolean; slug: string;
             <Link key={link.id} to="/p/$slug" params={{ slug }} hash={sectionAnchor(link.sectionId)} className="break-words hover:underline">{link[lang] || link.sr || link.en}</Link>
           ))}
           {editMode && <MenuEditor slug={slug} links={links} targets={targets} />}
-          {pages.map((p) => (
+          {pages.filter((p) => p.inMenu !== false).map((p) => (
             <Link key={p.slug} to="/p/$slug" params={{ slug: p.slug }} activeProps={{ className: "underline underline-offset-4" }}>
               <EditableText k={`page.${p.slug}.title`} />
             </Link>
@@ -298,7 +299,10 @@ function slugify(s: string) {
 
 function PagesDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { json, save, t } = useSite();
+  const navigate = useNavigate();
   const pages = json<PageInfo[]>("pages", []);
+  const toggleMenu = (slug: string) =>
+    save({ pages: JSON.stringify(pages.map((p) => p.slug === slug ? { ...p, inMenu: p.inMenu === false } : p)) }).catch((e) => toast.error(e.message));
   const [sr, setSr] = useState("");
   const [en, setEn] = useState("");
   const [busy, setBusy] = useState(false);
@@ -310,13 +314,15 @@ function PagesDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: 
     setBusy(true);
     try {
       await save({
-        pages: JSON.stringify([...pages, { slug }]),
+        pages: JSON.stringify([...pages, { slug, inMenu: true }]),
         [`t:page.${slug}.title:sr`]: sr || en,
         [`t:page.${slug}.title:en`]: en || sr,
         [layoutKey(slug)]: JSON.stringify([{ id: newId(), type: "text" }]),
       });
-      toast.success("Stranica napravljena — pojavila se u meniju");
+      toast.success("Stranica napravljena i dodata u meni — dodajte blokove i sekcije dugmetom „Dodaj blok”");
       setSr(""); setEn("");
+      onOpenChange(false);
+      navigate({ to: "/p/$slug", params: { slug } });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -340,6 +346,7 @@ function PagesDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: 
               <Link to="/p/$slug" params={{ slug: p.slug }} onClick={() => onOpenChange(false)} className="hover:underline">
                 {t(`page.${p.slug}.title`) || p.slug}
               </Link>
+              <label className="ml-auto mr-2 flex items-center gap-2 text-xs"><Switch checked={p.inMenu !== false} onCheckedChange={() => toggleMenu(p.slug)} /> U meniju</label>
               <Button size="icon" variant="ghost" onClick={() => del(p.slug)} title="Obriši"><Trash2 /></Button>
             </li>
           ))}
