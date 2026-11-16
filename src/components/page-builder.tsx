@@ -203,6 +203,10 @@ function SiteHeader({ overlay, slug, blocks }: { overlay: boolean; slug: string;
   const pages = json<PageInfo[]>("pages", []);
   const [pagesOpen, setPagesOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  // While the mobile menu is open the header is taller; keep the closed height as the scroll offset.
+  const menuOpenRef = useRef(false);
+  menuOpenRef.current = menuOpen;
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => {
@@ -219,13 +223,12 @@ function SiteHeader({ overlay, slug, blocks }: { overlay: boolean; slug: string;
   useEffect(() => {
     const header = headerRef.current;
     if (!header) return;
-    const update = () => document.documentElement.style.setProperty("--site-menu-offset", `${header.getBoundingClientRect().height + 16}px`);
+    const update = () => !menuOpenRef.current && document.documentElement.style.setProperty("--site-menu-offset", `${header.getBoundingClientRect().height + 16}px`);
     update();
     const observer = new ResizeObserver(update);
     observer.observe(header);
     return () => { observer.disconnect(); document.documentElement.style.removeProperty("--site-menu-offset"); };
   }, []);
-  const [menuOpen, setMenuOpen] = useState(false);
   const solid = !overlay || scrolled || menuOpen;
   const removeBrand = async () => {
     await save({ "t:brand.name:sr": "", "t:brand.name:en": "" });
@@ -261,7 +264,27 @@ function SiteHeader({ overlay, slug, blocks }: { overlay: boolean; slug: string;
         <button type="button" onClick={() => setMenuOpen((v) => !v)} aria-label={menuOpen ? "Zatvori meni" : "Otvori meni"} aria-expanded={menuOpen} className="shrink-0 rounded-md p-2 md:hidden">
           {menuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
         </button>
-        <div onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setMenuOpen(false); }} className={cn("w-full flex-col items-start gap-4 pb-2 text-base md:flex md:w-auto md:flex-row md:flex-wrap md:items-center md:gap-5 md:pb-0 md:text-sm", menuOpen ? "flex" : "hidden")}>
+        <div onClickCapture={(e) => {
+          const a = (e.target as HTMLElement).closest("a");
+          if (!a) return;
+          setMenuOpen(false);
+          // On phones, images sit above titles, so land on the section title right below the menu.
+          const hash = a.hash.slice(1);
+          const target = hash && window.innerWidth < 768 && a.pathname === window.location.pathname ? document.getElementById(hash) : null;
+          if (!target) return;
+          e.preventDefault();
+          e.stopPropagation();
+          const heading = target.querySelector("h1, h2, h3") ?? target;
+          history.replaceState(null, "", `#${hash}`);
+          // Images above may still load and shift the page, so re-align a few times.
+          const align = (behavior: ScrollBehavior) => {
+            const offset = (headerRef.current?.getBoundingClientRect().height ?? 0) + 12;
+            const delta = heading.getBoundingClientRect().top - offset;
+            if (Math.abs(delta) > 3) window.scrollTo({ top: window.scrollY + delta, behavior });
+          };
+          requestAnimationFrame(() => align("smooth"));
+          [700, 1300, 2000].forEach((ms) => setTimeout(() => align("auto"), ms));
+        }} className={cn("w-full flex-col items-start gap-4 pb-2 text-base md:flex md:w-auto md:flex-row md:flex-wrap md:items-center md:gap-5 md:pb-0 md:text-sm", menuOpen ? "flex" : "hidden")}>
           {slug !== "home" && <Link to="/"><EditableText k="nav.home" /></Link>}
           {links.map((link) => slug === "home" ? (
             <Link key={link.id} to="/" hash={sectionAnchor(link.sectionId)} className="break-words hover:underline">{link[lang] || link.sr || link.en}</Link>
