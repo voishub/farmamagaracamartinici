@@ -45,9 +45,9 @@ async function loadKnowledge() {
       },
     },
   });
-  const { data, error } = await sb.from("knowledge_base").select("content").eq("id", 1).maybeSingle();
+  const { data, error } = await sb.rpc("get_chat_knowledge");
   if (error) console.error("knowledge load failed", error);
-  return (data?.content ?? "").slice(0, MAX_KNOWLEDGE);
+  return ((data as string | null) ?? "").slice(0, MAX_KNOWLEDGE);
 }
 
 export async function handleChat(request: Request) {
