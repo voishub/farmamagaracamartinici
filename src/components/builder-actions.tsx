@@ -65,7 +65,7 @@ export function scrollToAnchor(hash: string): boolean {
   return true;
 }
 
-type ButtonSettings = { sr: string; en: string; action: "link" | "chat" | "scroll"; target: string; newTab: boolean; variant: "default" | "outline" | "secondary" | "hero" | "heroGhost" };
+type ButtonSettings = { sr: string; en: string; action: "link" | "chat" | "scroll"; target: string; newTab: boolean; variant: "default" | "outline" | "secondary" | "hero" | "heroGhost"; hideMobile?: boolean; hideTablet?: boolean };
 const buttonDefaults: ButtonSettings = { sr: "Novo dugme", en: "New button", action: "link", target: "", newTab: false, variant: "default" };
 
 export function BuilderButton({ id, fallback, className, size }: { id: string; fallback?: Partial<ButtonSettings>; className?: string; size?: "default" | "lg" }) {
@@ -98,8 +98,12 @@ export function BuilderButton({ id, fallback, className, size }: { id: string; f
     catch { toast.error("Dugme nije sačuvano"); }
     finally { setBusy(false); }
   };
+  // Visitors: hidden below 768px (phones) and/or 768–1023px (tablets). Editors still see it, dimmed.
+  const visibility = editMode
+    ? (settings.hideMobile || settings.hideTablet ? "opacity-60" : "")
+    : `${settings.hideMobile ? "max-md:hidden" : ""} ${settings.hideTablet ? "md:max-lg:hidden" : ""}`;
   return <>
-    <div className="flex min-w-0 flex-wrap items-center gap-2">
+    <div className={`flex min-w-0 flex-wrap items-center gap-2 ${visibility}`}>
       {href ? <Button asChild variant={settings.variant} size={size} className={`h-auto min-h-9 max-w-full whitespace-normal break-words ${className ?? ""}`}><a href={href} onClick={(e) => { if (href.startsWith("#") && !settings.newTab) { e.preventDefault(); if (!scrollToAnchor(href)) toast.error(lang === "sr" ? "Sekcija nije pronađena" : "Section not found"); } }} target={settings.newTab ? "_blank" : undefined} rel={settings.newTab ? "noopener noreferrer" : undefined}>{label}</a></Button>
         : <Button variant={settings.variant} disabled={settings.action === "link"} size={size} className={`h-auto min-h-9 max-w-full whitespace-normal break-words ${className ?? ""}`} onClick={run}>{label}</Button>}
       {editMode && <Button variant="outline" size="icon-sm" aria-label="Podesi dugme" title="Podesi dugme" onClick={openDialog}><Settings2 /></Button>}
@@ -112,6 +116,8 @@ export function BuilderButton({ id, fallback, className, size }: { id: string; f
       {draft.action !== "chat" && <Label className="flex flex-col gap-2">{draft.action === "link" ? "Link ili ankor (npr. #prica, #galerija, #kontakt)" : "Ili upišite ankor (npr. #prica, #galerija, #kontakt)"}<Input value={draft.target} placeholder={draft.action === "link" ? "https://… ili #kontakt" : "#kontakt"} onChange={(e) => change({ target: e.target.value })} /></Label>}
       {draft.action === "link" && <Label className="flex items-center justify-between gap-3">Otvori u novoj kartici<Switch checked={draft.newTab} onCheckedChange={(newTab) => change({ newTab })} /></Label>}
       <Label>Izgled dugmeta</Label><Select value={draft.variant} onValueChange={(variant: ButtonSettings["variant"]) => change({ variant })}><SelectTrigger aria-label="Izgled dugmeta"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="default">Puno</SelectItem><SelectItem value="outline">Sa okvirom</SelectItem><SelectItem value="secondary">Blago</SelectItem><SelectItem value="hero">Glavno (naglašeno)</SelectItem><SelectItem value="heroGhost">Prozirno</SelectItem></SelectContent></Select>
+      <Label className="flex items-center justify-between gap-3">Sakrij na mobilnim telefonima<Switch checked={!!draft.hideMobile} onCheckedChange={(hideMobile) => change({ hideMobile })} /></Label>
+      <Label className="flex items-center justify-between gap-3">Sakrij na tabletima<Switch checked={!!draft.hideTablet} onCheckedChange={(hideTablet) => change({ hideTablet })} /></Label>
       <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Otkaži</Button><Button disabled={busy} onClick={persist}><MousePointerClick />Sačuvaj</Button></DialogFooter>
     </DialogContent></Dialog>
   </>;

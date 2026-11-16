@@ -11,7 +11,7 @@
 
 ## Architecture
 - Page texts/images live in `site_content` (keys `t:<key>:<sr|en>`, `img:<key>`); defaults in `src/lib/content-defaults.ts`. Why: mini page builder edits overrides only.
-- Images are stored as compressed data URLs in the database because the workspace blocks public storage buckets.
+- Images are stored as compressed data URLs in the database (public storage buckets are blocked) but served to browsers as cacheable files via /api/public/img/$key?v=<updated_at>. Why: keep page data small so pages render fast.
 - Editable images and gallery thumbnails use intrinsic sizing constrained by their container, and upload compression keeps pixel dimensions unchanged. Why: replacements must not be cropped, stretched, or automatically enlarged.
 - Header image bounds come from the image, with content overlaid and editor outer spacing suppressed; logo upload controls sit outside navigation links and file inputs stop click propagation. Why: avoid image background bands and navigation interrupting uploads.
 - Admin = `user_roles` row; first signup becomes admin via trigger. Why: single-owner site.

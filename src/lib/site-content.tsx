@@ -5,25 +5,15 @@ import { defaultImages, defaultTexts, type Lang } from "./content-defaults";
 
 export const contentQuery = queryOptions({
   queryKey: ["site_content"],
-  // Images are large data URLs; one request for everything can hit the database
-  // statement timeout, so texts load in one query and images in small batches.
   queryFn: async () => {
     const map: Record<string, string> = {};
     const { data, error } = await supabase.from("site_content").select("key,value").not("key", "like", "img:%");
     if (error) throw error;
     for (const row of data ?? []) map[row.key] = row.value;
-    const { data: imgKeys, error: keyErr } = await supabase.from("site_content").select("key").like("key", "img:%");
+    // Images are only listed here; the browser fetches each one as a cached file, so pages render without waiting for them.
+    const { data: imgKeys, error: keyErr } = await supabase.from("site_content").select("key,updated_at").like("key", "img:%");
     if (keyErr) throw keyErr;
-    const keys = (imgKeys ?? []).map((r) => r.key);
-    const batches: string[][] = [];
-    for (let i = 0; i < keys.length; i += 4) batches.push(keys.slice(i, i + 4));
-    await Promise.all(batches.map(async (batch) => {
-      for (let attempt = 0; ; attempt++) {
-        const { data: rows, error: e } = await supabase.from("site_content").select("key,value").in("key", batch);
-        if (!e) { for (const row of rows ?? []) map[row.key] = row.value; return; }
-        if (attempt >= 2) throw e;
-      }
-    }));
+    for (const row of imgKeys ?? []) map[row.key] = `/api/public/img/${encodeURIComponent(row.key)}?v=${new Date(row.updated_at).getTime()}`;
     return map;
   },
   retry: 2,

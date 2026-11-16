@@ -15,6 +15,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as NovostiSlugRouteImport } from './routes/novosti.$slug'
 import { Route as PSlugRouteImport } from './routes/p.$slug'
+import { Route as ApiPublicImgKeyRouteImport } from './routes/api/public/img.$key'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +47,11 @@ const PSlugRoute = PSlugRouteImport.update({
   path: '/p/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicImgKeyRoute = ApiPublicImgKeyRouteImport.update({
+  id: '/api/public/img/$key',
+  path: '/api/public/img/$key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/novosti/$slug': typeof NovostiSlugRoute
   '/p/$slug': typeof PSlugRoute
+  '/api/public/img/$key': typeof ApiPublicImgKeyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/novosti/$slug': typeof NovostiSlugRoute
   '/p/$slug': typeof PSlugRoute
+  '/api/public/img/$key': typeof ApiPublicImgKeyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +79,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/novosti/$slug': typeof NovostiSlugRoute
   '/p/$slug': typeof PSlugRoute
+  '/api/public/img/$key': typeof ApiPublicImgKeyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,6 +90,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/novosti/$slug'
     | '/p/$slug'
+    | '/api/public/img/$key'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -89,6 +99,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/novosti/$slug'
     | '/p/$slug'
+    | '/api/public/img/$key'
   id:
     | '__root__'
     | '/'
@@ -97,6 +108,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/novosti/$slug'
     | '/p/$slug'
+    | '/api/public/img/$key'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +118,7 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   NovostiSlugRoute: typeof NovostiSlugRoute
   PSlugRoute: typeof PSlugRoute
+  ApiPublicImgKeyRoute: typeof ApiPublicImgKeyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -152,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/img/$key': {
+      id: '/api/public/img/$key'
+      path: '/api/public/img/$key'
+      fullPath: '/api/public/img/$key'
+      preLoaderRoute: typeof ApiPublicImgKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -162,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   NovostiSlugRoute: NovostiSlugRoute,
   PSlugRoute: PSlugRoute,
+  ApiPublicImgKeyRoute: ApiPublicImgKeyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -106,7 +106,7 @@ async function fileToDataUrl(file: File): Promise<string> {
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
   return file.type === "image/png" || file.type === "image/webp"
-    ? canvas.toDataURL("image/png")
+    ? canvas.toDataURL("image/webp", 0.85)
     : canvas.toDataURL("image/jpeg", 0.82);
 }
 
