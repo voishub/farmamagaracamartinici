@@ -1,3 +1,4 @@
+import type React from "react";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +35,9 @@ type Ctx = {
   setChatOpen: (v: boolean) => void;
 };
 
-const SiteCtx = createContext<Ctx | null>(null);
+// Kept on globalThis so live code reloads reuse the same context instead of breaking the page.
+const ctxStore = globalThis as { __siteCtx?: React.Context<Ctx | null> };
+const SiteCtx = (ctxStore.__siteCtx ??= createContext<Ctx | null>(null));
 
 export function SiteProvider({ children }: { children: ReactNode }) {
   const { data: content } = useSuspenseQuery(contentQuery);
