@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   ArrowDown, ArrowUp, Baby, ChevronLeft, ChevronRight, Clock, Droplets, FilePlus2, GripVertical, Heart, ImagePlus, Loader2, Mail, MapPin,
   Phone, Plus, Trash2, X,
+  Menu,
 } from "lucide-react";
 import { useSite } from "@/lib/site-content";
 import { EditableImage, EditableText, RadiusButton, useImageRadius } from "@/components/editable";
@@ -224,7 +225,8 @@ function SiteHeader({ overlay, slug, blocks }: { overlay: boolean; slug: string;
     observer.observe(header);
     return () => { observer.disconnect(); document.documentElement.style.removeProperty("--site-menu-offset"); };
   }, []);
-  const solid = !overlay || scrolled;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const solid = !overlay || scrolled || menuOpen;
   const removeBrand = async () => {
     await save({ "t:brand.name:sr": "", "t:brand.name:en": "" });
     toast.success("Tekst pored logoa obrisan");
@@ -238,8 +240,8 @@ function SiteHeader({ overlay, slug, blocks }: { overlay: boolean; slug: string;
         solid ? "border-b border-border/70 bg-menu-background text-menu-foreground shadow-sm" : "text-hero-foreground",
       )}
     >
-      <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-5">
-        <div className="flex items-center gap-2">
+      <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6 md:py-5">
+        <div className="flex min-w-0 items-center gap-2">
           {editMode ? (
             <EditableImage k="logo" alt="Logo" fallback={logo} compact eager wrapperClassName="w-10 shrink-0" />
           ) : (
@@ -247,8 +249,8 @@ function SiteHeader({ overlay, slug, blocks }: { overlay: boolean; slug: string;
               <EditableImage k="logo" alt="Logo" fallback={logo} eager />
             </Link>
           )}
-          <Link to="/" className="flex items-center gap-2">
-            <EditableText k="brand.name" className="font-display text-xl font-semibold" />
+          <Link to="/" className="flex min-w-0 items-center gap-2">
+            <EditableText k="brand.name" className="truncate font-display text-lg font-semibold sm:text-xl" />
           </Link>
           {editMode && (
             <button type="button" onClick={removeBrand} title="Obriši tekst pored logoa" className="rounded-full bg-edit p-1.5 text-edit-foreground">
@@ -256,7 +258,10 @@ function SiteHeader({ overlay, slug, blocks }: { overlay: boolean; slug: string;
             </button>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-5 text-sm">
+        <button type="button" onClick={() => setMenuOpen((v) => !v)} aria-label={menuOpen ? "Zatvori meni" : "Otvori meni"} aria-expanded={menuOpen} className="shrink-0 rounded-md p-2 md:hidden">
+          {menuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+        </button>
+        <div onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setMenuOpen(false); }} className={cn("w-full flex-col items-start gap-4 pb-2 text-base md:flex md:w-auto md:flex-row md:flex-wrap md:items-center md:gap-5 md:pb-0 md:text-sm", menuOpen ? "flex" : "hidden")}>
           {slug !== "home" && <Link to="/"><EditableText k="nav.home" /></Link>}
           {links.map((link) => slug === "home" ? (
             <Link key={link.id} to="/" hash={sectionAnchor(link.sectionId)} className="break-words hover:underline">{link[lang] || link.sr || link.en}</Link>
@@ -389,14 +394,14 @@ function HeroBlock() {
   return (
     <section data-hero className="relative">
       <EditableImage k="hero" alt="Magarci na pašnjaku" eager wrapperClassName="col-start-1 row-start-1 w-full" className="builder-image-full" buttonClassName="z-30 top-24" />
-      <div className="pointer-events-none absolute inset-0 bg-hero-overlay" />
-      <div className="absolute inset-x-0 bottom-0 z-10 mx-auto w-full max-w-6xl px-6 pb-4 text-hero-foreground sm:pb-10 lg:pb-20">
+      <div className="pointer-events-none absolute inset-0 hidden bg-hero-overlay sm:block" />
+      <div className="relative z-10 mx-auto w-full max-w-6xl bg-olive px-5 py-8 text-olive-foreground sm:absolute sm:inset-x-0 sm:bottom-0 sm:bg-transparent sm:px-6 sm:py-0 sm:pb-10 sm:text-hero-foreground lg:pb-20">
         <EditableText k="hero.eyebrow" as="p" className="mb-2 text-xs uppercase opacity-90 sm:mb-4 sm:text-sm" />
-        <EditableText k="hero.title" as="h1" className="max-w-3xl text-xl font-semibold leading-[1.05] sm:text-5xl lg:text-7xl" />
-        <EditableText k="hero.subtitle" as="p" className="mt-2 max-w-xl text-xs opacity-90 sm:mt-6 sm:text-lg" />
-        <div className="mt-3 flex flex-wrap gap-2 sm:mt-8 sm:gap-3">
-          <BuilderButton id="hero-cta" size="lg" className="text-xs sm:min-h-12 sm:px-8 sm:text-base" fallback={{ sr: textFor("hero.cta", "sr"), en: textFor("hero.cta", "en"), action: "chat", variant: "hero" }} />
-          <BuilderButton id="hero-cta2" size="lg" className="text-xs sm:min-h-12 sm:px-8 sm:text-base" fallback={{ sr: textFor("hero.cta2", "sr"), en: textFor("hero.cta2", "en"), action: "link", target: "#prica", variant: "heroGhost" }} />
+        <EditableText k="hero.title" as="h1" className="max-w-3xl text-3xl font-semibold leading-[1.1] sm:text-5xl lg:text-7xl" />
+        <EditableText k="hero.subtitle" as="p" className="mt-3 max-w-xl text-base opacity-90 sm:mt-6 sm:text-lg" />
+        <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
+          <BuilderButton id="hero-cta" size="lg" className="w-full text-sm sm:w-auto sm:min-h-12 sm:px-8 sm:text-base" fallback={{ sr: textFor("hero.cta", "sr"), en: textFor("hero.cta", "en"), action: "chat", variant: "hero" }} />
+          <BuilderButton id="hero-cta2" size="lg" className="w-full text-sm sm:w-auto sm:min-h-12 sm:px-8 sm:text-base" fallback={{ sr: textFor("hero.cta2", "sr"), en: textFor("hero.cta2", "en"), action: "link", target: "#prica", variant: "heroGhost" }} />
         </div>
       </div>
     </section>
